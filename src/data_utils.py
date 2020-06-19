@@ -79,6 +79,9 @@ def write_stats(stats, writer, epoch):
     writer.add_scalar('Dice_Score/train_dice_score', avg_train_dice, epoch + 1)
     writer.add_scalar('Dice_Score/test_dice_score', avg_test_dice, epoch + 1)
 
+    # LR
+    writer.add_scalar('Learning_Rate', stats['lr'], epoch + 1)
+
 
 def visualize_batch(inputs, targets, epoch):
     images = (inputs.cpu().permute([0, 3, 2, 1]).numpy()*255).astype(np.uint8)

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import torch
 import datetime
-from src.data_utils import probe_images_labels, pd_train_test_split
+from data_utils import probe_images_labels, pd_train_test_split
 
 
 class BRATS18Dataset(torch.utils.data.Dataset):
