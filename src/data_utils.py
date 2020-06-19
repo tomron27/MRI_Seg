@@ -58,19 +58,19 @@ def get_dice_score(y_true, y_pred, smooth=0.01):
     return dsc.item()
 
 
-def log_stats(stats, fold, outputs, targets, loss, lr=None):
+def log_stats(stats, outputs, targets, loss, lr=None):
     loss = loss.item()
-    if fold + '_loss' in stats:
-        stats[fold + '_loss'].append(loss)
+    if 'loss' in stats:
+        stats['loss'].append(loss)
     else:
-        stats[fold + '_loss'] = [loss]
+        stats['loss'] = [loss]
 
     dice_score = get_dice_score(targets, outputs)
 
-    if fold + '_dice_score' in stats:
-        stats[fold + '_dice_score'].append(dice_score)
+    if 'dice_score' in stats:
+        stats['dice_score'].append(dice_score)
     else:
-        stats[fold + '_dice_score'] = [dice_score]
+        stats['dice_score'] = [dice_score]
 
     if lr is not None:
         stats['lr'] = lr
@@ -78,21 +78,18 @@ def log_stats(stats, fold, outputs, targets, loss, lr=None):
 
 def write_stats(stats, writer, epoch):
     # Compute stuff
-    avg_train_loss = sum(stats['train_loss']) / len(stats['train_loss'])
-    avg_test_loss = sum(stats['test_loss']) / len(stats['test_loss'])
-    avg_train_dice = sum(stats['train_dice_score']) / len(stats['train_dice_score'])
-    avg_test_dice = sum(stats['test_dice_score']) / len(stats['test_dice_score'])
+    avg_loss = sum(stats['loss']) / len(stats['loss'])
+    avg_dice = sum(stats['dice_score']) / len(stats['dice_score'])
     
     # Loss
-    writer.add_scalar('Loss/train_loss', avg_train_loss, epoch + 1)
-    writer.add_scalar('Loss/test_loss', avg_test_loss, epoch + 1)
+    writer.add_scalar('Loss', avg_loss, epoch + 1)
 
     # Dice
-    writer.add_scalar('Dice_Score/train_dice_score', avg_train_dice, epoch + 1)
-    writer.add_scalar('Dice_Score/test_dice_score', avg_test_dice, epoch + 1)
+    writer.add_scalar('Dice_Score', avg_dice, epoch + 1)
 
     # LR
-    writer.add_scalar('Learning_Rate', stats['lr'], epoch + 1)
+    if 'lr' in stats:
+        writer.add_scalar('Learning_Rate', stats['lr'], epoch + 1)
 
 
 def visualize_batch(inputs, targets, epoch):

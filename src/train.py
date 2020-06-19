@@ -99,11 +99,13 @@ if __name__ == "__main__":
     # Loss
     criterion = DiceLoss(smooth=params.loss_smooth)
 
-    # Tensorbaord
-    writer = SummaryWriter(log_dir)
+    # Tensorbaord writers
+    train_writer = SummaryWriter(os.path.join(log_dir, "train"))
+    test_writer = SummaryWriter(os.path.join(log_dir, "test"))
 
+    # Training
     for epoch in range(params.num_epochs):
-        epoch_stats = {}
+        train_stats, test_stats = {}, {}
         for fold in ["train", "test"]:
             print("*** Epoch {} - {} ***".format(epoch + 1, fold))
             if fold == "train":
@@ -122,14 +124,14 @@ if __name__ == "__main__":
                     else:
                         current_lr = params.lr
 
-                    log_stats(epoch_stats, fold, outputs, targets, loss, current_lr)
+                    log_stats(train_stats, outputs, targets, loss, current_lr)
             elif fold == "test":
                 with torch.no_grad():
                     for i, (inputs, targets) in tqdm(enumerate(test_loader), total=len(test_loader)):
                         inputs, targets = inputs.to(device), targets.to(device)
                         outputs = model(inputs)
                         loss = criterion(outputs, targets)
-                        log_stats(epoch_stats, fold, outputs, targets, loss)
+                        log_stats(test_stats, outputs, targets, loss)
 
         if scheduler is not None:
             scheduler.step()
@@ -142,6 +144,8 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), model_file)
 
         # Write stats to tensorboard
-        write_stats(epoch_stats, writer, epoch)
+        write_stats(train_stats, train_writer, epoch)
+        write_stats(test_stats, test_writer, epoch)
 
-    writer.close()
+    train_writer.close()
+    test_writer.close()
