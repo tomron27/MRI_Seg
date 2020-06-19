@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import pandas as pd
 import torch
 import datetime
 from data_utils import probe_images_labels, pd_train_test_split
@@ -13,7 +14,7 @@ class BRATS18Dataset(torch.utils.data.Dataset):
         # data augmentation
         self.transforms = transforms
 
-        print("Found {} samples".format(len(self.metadata)))
+        print("Found {} slices from {} patients".format(len(self.metadata), len(pd.unique(self.metadata['patient']))))
 
     def __getitem__(self, index):
         # update the seed to avoid workers sample the same augmentation parameters

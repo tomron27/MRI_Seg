@@ -23,13 +23,25 @@ def probe_images_labels(image_dir, label_dir):
                 path = Path(os.path.join(dirpath, label_file))
                 label_list.append(path)
 
-    image_df = pd.DataFrame([(path, path.parts[-1]) for path in image_list], columns=['image_path', 'file'])
-    label_df = pd.DataFrame([(path, path.parts[-1]) for path in label_list], columns=['label_path', 'file'])
-    result = image_df.merge(label_df, on='file')
+    image_df = pd.DataFrame([(path, path.parts[-1], path.parts[-1].split(" ")[0])
+                             for path in image_list], columns=['image_path', 'file', 'patient'])
+    label_df = pd.DataFrame([(path, path.parts[-1], path.parts[-1].split(" ")[0])
+                             for path in label_list], columns=['label_path', 'file', 'patient'])
+    result = image_df.merge(label_df, on=['file', 'patient'])
     return result
 
 
-def pd_train_test_split(df, shuffle=True, random_state=42, test_frac=0.2):
+def pd_train_test_split(df, by_patient=True, shuffle=True, random_state=42, test_frac=0.2):
+    if by_patient:
+        grouped = pd.DataFrame({'count': df.groupby(["patient"]).size()}).reset_index()
+        grouped_split = int(test_frac * len(grouped))
+        grouped_train, grouped_test = grouped[grouped_split:], grouped[:grouped_split]
+        train = df.merge(grouped_train, on='patient')
+        test = df.merge(grouped_test, on='patient')
+        if shuffle:
+            train = train.sample(frac=1, random_state=random_state).reset_index(drop=True)
+            test = test.sample(frac=1, random_state=random_state).reset_index(drop=True)
+        return train, test
     if shuffle:
         df = df.sample(frac=1, random_state=random_state).reset_index(drop=True)
     split = int(test_frac*len(df))
@@ -96,6 +108,4 @@ def visualize_batch(inputs, targets, epoch):
             plt.contour(label)
             plt.savefig(os.path.join(dest_dir, "test_image{:2d}_layer_{}.png".format(i, layer)))
             plt.clf()
-
-
 

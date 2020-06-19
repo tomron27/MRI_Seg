@@ -2,8 +2,8 @@ class Config(object):
     def __init__(self):
         self.name = "unet__no_pt"
         self.log_path = "/home/tomron27/projects/MRI_Seg/logs/"
-        self.image_dir = "/home/tomron27/datasets/BraTS18/proc/train/Database Images/HGG - Train/"
-        self.label_dir = "/home/tomron27/datasets/BraTS18/proc/train/Database Images/HGG - Single/"
+        self.image_dir = "/home/tomron27/datasets/BraTS18/proc/train/Database Images/Full - Train/"
+        self.label_dir = "/home/tomron27/datasets/BraTS18/proc/train/Database Images/Full - Single/"
         self.scale_size = (256, 256)
         self.crop_size = (224, 224)
         self.num_epochs = 100
