@@ -131,6 +131,9 @@ if __name__ == "__main__":
                         loss = criterion(outputs, targets)
                         log_stats(epoch_stats, fold, outputs, targets, loss)
 
+        if scheduler is not None:
+            scheduler.step()
+
         # Save model parameters
         if epoch % params.save_freq == 0:
             save_dir = os.path.join(log_dir, 'model')
