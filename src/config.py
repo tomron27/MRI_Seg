@@ -8,10 +8,15 @@ class Config(object):
         self.scale_size = (256, 256)
         self.crop_size = (224, 224)
         self.num_epochs = 100
+        self.num_classes = 1
         self.lr = 0.001
-        self.batch_size = 16
-        self.num_workers = 4
+        self.batch_size = 64
+        self.num_workers = 1
         self.device_id = 2
         self.optim_step = 100
         self.optim_factor = 0.5
         self.save_freq = 20
+        self.loss_smooth = 0.01
+        self.pretrained = True
+        self.model_weights = "/home/tomron27/projects/MRI_Seg/src/models/unet/unet.pt"
+        self.seed = 42

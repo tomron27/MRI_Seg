@@ -1,25 +1,35 @@
 import os
+import random
+import numpy as np
 from datetime import datetime
 from src.config import Config
-from src.data_utils import probe_images_labels, pd_train_test_split, log_stats, write_stats
+from src.data_utils import probe_images_labels, pd_train_test_split, log_stats, write_stats, visualize_batch
 from src.dataloader import BRATS18Dataset
 from albumentations import (Compose, CenterCrop, Resize, ShiftScaleRotate, HueSaturationValue)
 from albumentations.pytorch.transforms import ToTensor
 import torch
 from torch.utils.data import DataLoader
+from src.loss import DiceLoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+from src.models.unet.unet import UNet
 
 # DEBUG
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib import pyplot as plt
+# import matplotlib
+# matplotlib.use('TkAgg')
+# from matplotlib import pyplot as plt
 
 # Load configuration
 params = Config()
+
+os.environ['CUDA_VISIBLE_DEVICES'] = str(params.device_id)
+
+# Set seed
+random.seed(params.seed)
+np.random.seed(params.seed)
 
 # Create log dir
 log_dir = os.path.join(params.log_path, params.name, datetime.now().strftime("%Y%m%d_%H:%M:%S"))
@@ -53,7 +63,7 @@ print("Train set:")
 train_dataset = BRATS18Dataset(train_metadata, transforms=train_transforms)
 
 print("Test set:")
-test_dataset = BRATS18Dataset(test_metadata)
+test_dataset = BRATS18Dataset(test_metadata, transforms=test_transforms)
 
 
 # Dataloaders
@@ -64,15 +74,12 @@ test_loader = DataLoader(dataset=test_dataset, num_workers=params.num_workers,
 
 # Model
 # TODO - add model
-model = None
+model = UNet(in_channels=3, out_channels=params.num_classes, init_features=32,
+             pretrained=True, weights=params.model_weights)
 
 # CUDA
-if torch.cuda.is_available():
-    if hasattr(params, 'device_id'):
-        torch.cuda.set_device(params.device_id)
-    device = torch.device('cuda')
-else:
-    device = torch.device('cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = model.to(device)
 
 # Parameters
 total_params = sum(p.numel() for p in model.parameters())
@@ -84,8 +91,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
 scheduler = StepLR(optimizer, step_size=params.optim_step, gamma=params.optim_factor)
 
 # Loss
-# TODO - Dice loss
-criterion = None
+criterion = DiceLoss(smooth=params.loss_smooth)
 
 # Tensorbaord
 writer = SummaryWriter(log_dir)
@@ -93,22 +99,25 @@ writer = SummaryWriter(log_dir)
 for epoch in range(params.num_epochs):
     epoch_stats = {}
     for fold in ["train", "test"]:
+        print("*** Epoch {} - {} ***".format(epoch + 1, fold))
         if fold == "train":
-            print("*** Epoch {} Train fold".format(epoch + 1))
             for i, (inputs, targets) in tqdm(enumerate(train_loader), total=len(train_loader)):
                 inputs, targets = inputs.to(device), targets.to(device)
+                # if i == 0:
+                #     visualize_batch(inputs, targets, epoch)
                 outputs = model(inputs)
                 loss = criterion(outputs, targets)
                 optimizer.zero_grad()
-                loss.backwards()
+                loss.backward()
                 optimizer.step()
 
                 if scheduler is not None:
                     current_lr = scheduler.get_last_lr()[0]
                 else:
                     current_lr = params.lr
+
                 log_stats(epoch_stats, fold, outputs, targets, loss, current_lr)
-        else:
+        elif fold == "test":
             with torch.no_grad():
                 for i, (inputs, targets) in tqdm(enumerate(test_loader), total=len(test_loader)):
                     inputs, targets = inputs.to(device), targets.to(device)
@@ -116,7 +125,7 @@ for epoch in range(params.num_epochs):
                     loss = criterion(outputs, targets)
                     log_stats(epoch_stats, fold, outputs, targets, loss)
 
-    # Save parameters
+    # Save model parameters
     if epoch % params.save_freq == 0:
         save_dir = os.path.join(log_dir, 'model')
         os.makedirs(save_dir, exist_ok=True)
