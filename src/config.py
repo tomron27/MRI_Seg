@@ -1,6 +1,7 @@
 class Config(object):
     def __init__(self):
         self.name = "unet_no_pt"
+        self.arch_name = "unet"
         self.log_path = "/home/tomron27/projects/MRI_Seg/logs/"
         self.image_dir = "/home/tomron27/datasets/BraTS18/proc/train/Database Images/Full - Train/"
         self.label_dir = "/home/tomron27/datasets/BraTS18/proc/train/Database Images/Full - Single/"

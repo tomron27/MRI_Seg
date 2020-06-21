@@ -17,7 +17,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from models.unet.unet import UNet
+from get_models import get_model
 
 # DEBUG
 # import matplotlib
@@ -87,13 +87,12 @@ if __name__ == "__main__":
     train_loader = DataLoader(dataset=train_dataset, num_workers=params.num_workers,
                               batch_size=params.batch_size, shuffle=True)
     val_loader = DataLoader(dataset=val_dataset, num_workers=params.num_workers,
-                             batch_size=params.batch_size, shuffle=False)
+                            batch_size=params.batch_size, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, num_workers=params.num_workers,
                              batch_size=params.batch_size, shuffle=False)
 
     # Model
-    model = UNet(in_channels=3, out_channels=params.num_classes, init_features=32,
-                 pretrained=params.pretrained, weights=params.model_weights)
+    model = get_model(params)
 
     # CUDA
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
