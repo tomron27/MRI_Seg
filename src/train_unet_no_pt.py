@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
     # Evaluation on test set
     print("******* Testing *******")
-    model_file = os.path.join(log_dir, params.name + '__best')
+    model_file = os.path.join(log_dir, 'model', params.name + '__best')
     model.load_state_dict(torch.load(model_file))
     test_stats = {}
     with torch.no_grad():

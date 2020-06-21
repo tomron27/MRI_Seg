@@ -76,7 +76,7 @@ def log_stats(stats, outputs, targets, loss, lr=None):
 def save_best_model(model, stats, best_score, log_dir, model_name, score="dice_score"):
     current_avg_score = sum(stats[score]) / len(stats[score])
     if current_avg_score > best_score:
-        print("Model improved from {} from {} to {}".format(score, current_avg_score, best_score))
+        print("Model improved '{}' from {} to {}".format(score, best_score, current_avg_score))
         save_dir = os.path.join(log_dir, 'model')
         os.makedirs(save_dir, exist_ok=True)
         model_file = os.path.join(save_dir, model_name + '__best')
