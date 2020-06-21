@@ -6,11 +6,11 @@ class Config(object):
         self.label_dir = "/home/tomron27/datasets/BraTS18/proc/train/Database Images/Full - Single/"
         self.scale_size = (256, 256)
         self.crop_size = (224, 224)
-        self.num_epochs = 100
+        self.num_epochs = 60
         self.num_classes = 1
         self.lr = 1e-4
         self.batch_size = 64
-        self.num_workers = 1
+        self.num_workers = 4
         self.device_id = 2
         self.optim_step = 20
         self.optim_factor = 0.75

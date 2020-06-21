@@ -4,7 +4,8 @@ import pickle
 import numpy as np
 from datetime import datetime
 from config import Config
-from data_utils import probe_images_labels, pd_train_test_val_split, log_stats, write_stats, visualize_batch
+from data_utils import probe_images_labels, pd_train_test_val_split, log_stats, write_stats, \
+    save_best_model, visualize_batch
 from dataloader import BRATS18Dataset
 from albumentations import (Compose, CenterCrop, Resize, ShiftScaleRotate, HueSaturationValue)
 from albumentations.pytorch.transforms import ToTensor
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     # Save configuration
     pickle.dump(params, open(os.path.join(log_dir, "params.p"), "wb"))
 
-    # Load metadata
+    # Load metadata and split
     df = probe_images_labels(params.image_dir, params.label_dir)
     split_df = pd_train_test_val_split(df, random_state=params.seed, train_frac=params.train_frac)
 
@@ -115,8 +116,10 @@ if __name__ == "__main__":
     val_writer = SummaryWriter(os.path.join(log_dir, "validation"))
 
     # Training
+    print("******* Training *******")
+    best_score = 0.0
     for epoch in range(params.num_epochs):
-        train_stats, test_stats = {}, {}
+        train_stats, val_stats = {}, {}
         for fold in ["train", "val"]:
             print("*** Epoch {} - {} ***".format(epoch + 1, fold))
             if fold == "train":
@@ -138,25 +141,40 @@ if __name__ == "__main__":
                     log_stats(train_stats, outputs, targets, loss, current_lr)
             elif fold == "val":
                 with torch.no_grad():
-                    for i, (inputs, targets) in tqdm(enumerate(test_loader), total=len(test_loader)):
+                    for i, (inputs, targets) in tqdm(enumerate(val_loader), total=len(val_loader)):
                         inputs, targets = inputs.to(device), targets.to(device)
                         outputs = model(inputs)
                         loss = criterion(outputs, targets)
-                        log_stats(test_stats, outputs, targets, loss)
+                        log_stats(val_stats, outputs, targets, loss)
 
+        # Progress optimizer scheduler
         if scheduler is not None:
             scheduler.step()
 
-        # Save model parameters
-        if epoch % params.save_freq == 0:
-            save_dir = os.path.join(log_dir, 'model')
-            os.makedirs(save_dir, exist_ok=True)
-            model_file = os.path.join(save_dir, params.name + '__epoch_{:04d}'.format(epoch))
-            torch.save(model.state_dict(), model_file)
-
         # Write stats to tensorboard
         write_stats(train_stats, train_writer, epoch)
-        write_stats(test_stats, val_writer, epoch)
+        write_stats(val_stats, val_writer, epoch)
+
+        # Save best validation model
+        best_score = save_best_model(model, val_stats, best_score, log_dir, params.name, score="dice_score")
 
     train_writer.close()
     val_writer.close()
+
+    # Evaluation on test set
+    print("******* Testing *******")
+    model_file = os.path.join(log_dir, params.name + '__best')
+    model.load_state_dict(torch.load(model_file))
+    test_stats = {}
+    with torch.no_grad():
+        for i, (inputs, targets) in tqdm(enumerate(test_loader), total=len(test_loader)):
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            log_stats(test_stats, outputs, targets, loss)
+
+    avg_loss = sum(test_stats['loss']) / len(test_stats['loss'])
+    avg_dice = sum(test_stats['dice_score']) / len(test_stats['dice_score'])
+
+    print("Avg test loss: {}".format(avg_loss))
+    print("Avg test dice score: {}".format(avg_dice))

@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import cv2
-
+import torch
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
@@ -71,6 +71,18 @@ def log_stats(stats, outputs, targets, loss, lr=None):
 
     if lr is not None:
         stats['lr'] = lr
+
+
+def save_best_model(model, stats, best_score, log_dir, model_name, score="dice_score"):
+    current_avg_score = sum(stats[score]) / len(stats[score])
+    if current_avg_score > best_score:
+        print("Model improved from {} from {} to {}".format(score, current_avg_score, best_score))
+        save_dir = os.path.join(log_dir, 'model')
+        os.makedirs(save_dir, exist_ok=True)
+        model_file = os.path.join(save_dir, model_name + '__best')
+        print("Saving model to '{}'".format(model_file))
+        torch.save(model.state_dict(), model_file)
+    return current_avg_score
 
 
 def write_stats(stats, writer, epoch):
