@@ -31,22 +31,19 @@ def probe_images_labels(image_dir, label_dir):
     return result
 
 
-def pd_train_test_split(df, by_patient=True, shuffle=True, random_state=42, test_frac=0.2):
-    if by_patient:
-        grouped = pd.DataFrame({'count': df.groupby(["patient"]).size()}).reset_index()
-        grouped_split = int(test_frac * len(grouped))
-        grouped_train, grouped_test = grouped[grouped_split:], grouped[:grouped_split]
-        train = df.merge(grouped_train, on='patient')
-        test = df.merge(grouped_test, on='patient')
-        if shuffle:
-            train = train.sample(frac=1, random_state=random_state).reset_index(drop=True)
-            test = test.sample(frac=1, random_state=random_state).reset_index(drop=True)
-        return train, test
-    if shuffle:
-        df = df.sample(frac=1, random_state=random_state).reset_index(drop=True)
-    split = int(test_frac*len(df))
-    train, test = df[split:], df[:split]
-    return train, test
+def pd_train_test_val_split(df, random_state=42, train_frac=0.6):
+    test_valid_frac = 1-((1-train_frac)/2.0)
+    grouped = pd.DataFrame({'count': df.groupby(["patient"]).size()}).reset_index()
+    grouped_train, grouped_val, grouped_test = \
+        np.split(grouped.sample(frac=1, random_state=random_state),
+                 [int(train_frac * len(grouped)), int(test_valid_frac * len(grouped))])
+    grouped_train['fold'] = "train"
+    grouped_val['fold'] = "val"
+    grouped_test['fold'] = "test"
+    grouped_res = grouped_train.append(grouped_val).append(grouped_test)
+
+    result = df.merge(grouped_res, on='patient')
+    return result
 
 
 def get_dice_score(y_true, y_pred, smooth=0.01):

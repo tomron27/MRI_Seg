@@ -19,3 +19,4 @@ class Config(object):
         self.pretrained = False
         self.model_weights = "/home/tomron27/projects/MRI_Seg/src/models/unet/unet.pt"
         self.seed = 42
+        self.train_frac = 0.6
