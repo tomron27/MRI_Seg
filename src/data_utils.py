@@ -55,12 +55,13 @@ def get_dice_score(y_true, y_pred, smooth=0.01):
     return dsc.item()
 
 
-def log_stats(stats, outputs, targets, loss, lr=None):
-    loss = loss.item()
-    if 'loss' in stats:
-        stats['loss'].append(loss)
-    else:
-        stats['loss'] = [loss]
+def log_stats(stats, outputs, targets, loss=None, lr=None):
+    if loss is not None:
+        loss = loss.item()
+        if 'loss' in stats:
+            stats['loss'].append(loss)
+        else:
+            stats['loss'] = [loss]
 
     dice_score = get_dice_score(targets, outputs)
 
@@ -82,7 +83,8 @@ def save_best_model(model, stats, best_score, log_dir, model_name, score="dice_s
         model_file = os.path.join(save_dir, model_name + '__best')
         print("Saving model to '{}'".format(model_file))
         torch.save(model.state_dict(), model_file)
-    return current_avg_score
+        best_score = current_avg_score
+    return best_score
 
 
 def write_stats(stats, writer, epoch):

@@ -36,21 +36,10 @@ if __name__ == "__main__":
     random.seed(params.seed)
     np.random.seed(params.seed)
 
-    # Create log dir
-    log_dir = os.path.join(params.log_path, params.name, datetime.now().strftime("%Y%m%d_%H:%M:%S"))
-    os.makedirs(log_dir)
-    print("Log dir: '{}'".format(log_dir))
-
-    # Save configuration
-    pickle.dump(params, open(os.path.join(log_dir, "params.p"), "wb"))
-
     # Load metadata and split
     df = probe_images_labels(params.image_dir, params.label_dir)
     split_df = pd_train_test_val_split(df, random_state=params.seed, train_frac=params.train_frac)
 
-    # Save metadata split
-    split_df.to_csv(os.path.join(log_dir, "metadata.csv"))
-    print("Saved metadata split to '{}'".format(os.path.join(log_dir, "metadata.csv")))
     train_metadata = split_df[split_df['fold'] == "train"]
     val_metadata = split_df[split_df['fold'] == "val"]
     test_metadata = split_df[split_df['fold'] == "test"]
@@ -109,6 +98,18 @@ if __name__ == "__main__":
 
     # Loss
     criterion = DiceLoss(smooth=params.loss_smooth)
+
+    # Create log dir
+    log_dir = os.path.join(params.log_path, params.name, datetime.now().strftime("%Y%m%d_%H:%M:%S"))
+    os.makedirs(log_dir)
+    print("Log dir: '{}'".format(log_dir))
+
+    # Save configuration
+    pickle.dump(params, open(os.path.join(log_dir, "params.p"), "wb"))
+
+    # Save metadata split
+    split_df.to_csv(os.path.join(log_dir, "metadata.csv"))
+    print("Saved metadata split to '{}'".format(os.path.join(log_dir, "metadata.csv")))
 
     # Tensorbaord writers
     train_writer = SummaryWriter(os.path.join(log_dir, "train"))
