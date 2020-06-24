@@ -54,6 +54,7 @@ if __name__ == "__main__":
     df = probe_images_labels(image_dir, label_dir)
     split_df = pd_train_test_val_split(df, random_state=seed, train_frac=train_frac)
 
+    val_metadata = split_df[split_df['fold'] == "val"]
     test_metadata = split_df[split_df['fold'] == "test"]
 
     test_transforms = Compose(
@@ -63,6 +64,10 @@ if __name__ == "__main__":
             ToTensor()
          ]
     )
+
+    print("Validation set:")
+    val_dataset = BRATS18Dataset(val_metadata, transforms=test_transforms)
+    val_loader = DataLoader(dataset=val_dataset, num_workers=num_workers, batch_size=batch_size, shuffle=False)
 
     print("Test set:")
     test_dataset = BRATS18Dataset(test_metadata, transforms=test_transforms)
@@ -79,16 +84,24 @@ if __name__ == "__main__":
         model = get_model(model_params)
         model.load_state_dict(torch.load(os.path.join(model_log_dir, "model", model_name + "__best")))
         model = model.to(device)
-        test_stats = {}
+        total_params = sum(p.numel() for p in model.parameters())
+        val_stats, test_stats = {}, {}
         with torch.no_grad():
+            print("* Validation set *")
+            for i, (inputs, targets) in tqdm(enumerate(val_loader), total=len(val_loader)):
+                inputs, targets = inputs.to(device), targets.to(device)
+                outputs = model(inputs)
+                log_stats(val_stats, outputs, targets)
+            print("* Test set *")
             for i, (inputs, targets) in tqdm(enumerate(test_loader), total=len(test_loader)):
                 inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(inputs)
                 log_stats(test_stats, outputs, targets)
 
+        avg_val_dice = sum(val_stats['dice_score']) / len(val_stats['dice_score'])
         avg_test_dice = sum(test_stats['dice_score']) / len(test_stats['dice_score'])
-        results.append((model_name, avg_test_dice))
+        results.append((model_name, total_params, avg_val_dice, avg_test_dice))
 
-    result_df = pd.DataFrame(results, columns=["model_name", "test_dice"])
+    result_df = pd.DataFrame(results, columns=["model_name", "num_params", "avg_validation_dice", "avg_test_dice"])
     result_df.to_csv("brats18_test_results.csv", index=False)
 
