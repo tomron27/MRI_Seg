@@ -42,8 +42,12 @@ if __name__ == "__main__":
                   ("unet_resnet34_scse", os.path.join(log_dir, "unet_resnet34_pt_scse/20200622_21:39:42/")),
               "unet_resnet50_no_pt":
                   ("unet_resnet50", os.path.join(log_dir, "unet_resnet50_no_pt/20200623_09:46:17/")),
-              # "unet_resnet50_pt":
-              #     ("unet_resnet50", os.path.join(log_dir, "unet_resnet50_pt/20200623_17:44:48/")),
+              "unet_resnet50_pt":
+                  ("unet_resnet50", os.path.join(log_dir, "unet_resnet50_pt/20200623_19:44:39/")),
+              "unet_resnet50_no_pt_scse":
+                  ("unet_resnet50", os.path.join(log_dir, "unet_resnet50_no_pt_scse/20200624_16:27:38/")),
+              "unet_resnet50_pt_scse":
+                  ("unet_resnet50", os.path.join(log_dir, "unet_resnet50_pt_scse/20200625_01:47:34/")),
               }
 
     # Set seed

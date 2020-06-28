@@ -1,6 +1,6 @@
 class Config(object):
     def __init__(self):
-        self.name = "unet_resnet50_no_pt_scse"
+        self.name = "unet_resnet50_pt_scse"
         self.arch_name = "unet_resnet50_scse"
         self.log_path = "/home/tomron27/projects/MRI_Seg/logs/"
         self.image_dir = "/home/tomron27/datasets/BraTS18/proc/train/Database Images/Full - Train/"
@@ -17,7 +17,7 @@ class Config(object):
         self.optim_factor = 0.75
         self.save_freq = 20
         self.loss_smooth = 0.01
-        self.pretrained = False
+        self.pretrained = True
         self.model_weights = "/home/tomron27/projects/MRI_Seg/src/models/unet/unet.pt"
         self.seed = 42
         self.train_frac = 0.6
